@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OttoClub OS • Funil Comercial & Jornada de Cuidado</title>
+    <meta name="description" content="Sistema interativo de gestão de vendas avulsas e jornada clínica OttoClub em 6 etapas.">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Configuração de Paleta Executiva OttoClub -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Inter"', 'system-ui', '-apple-system', 'sans-serif'],
+                    },
+                    colors: {
+                        obsidian: {
+                            950: '#070709',
+                            900: '#101014',
+                            850: '#16161C',
+                            800: '#1E1E26',
+                            700: '#2A2A35',
+                        },
+                        champagne: {
+                            400: '#DFC39D',
+                            500: '#C8A97E',
+                            600: '#A8895E',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #070709;
+            color: #F4F4F6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .ambient-bg {
+            background-image: radial-gradient(circle at 50% 0%, rgba(200, 169, 126, 0.08) 0%, transparent 50%);
+        }
+
+        /* Barra de rolagem discreta para o quadro horizontal */
+        .kanban-scroll::-webkit-scrollbar {
+            height: 8px;
+        }
+        .kanban-scroll::-webkit-scrollbar-track {
+            background: #101014;
+            border-radius: 999px;
+        }
+        .kanban-scroll::-webkit-scrollbar-thumb {
+            background: #2A2A35;
+            border-radius: 999px;
+        }
+        .kanban-scroll::-webkit-scrollbar-thumb:hover {
+            background: #C8A97E;
+        }
+
+        /* Inputs padrão dark */
+        .otto-input {
+            width: 100%;
+            background-color: #16161C;
+            border: 1px solid #2A2A35;
+            border-radius: 0.75rem;
+            padding: 0.7rem 0.9rem;
+            font-size: 0.875rem;
+            color: #F4F4F6;
+            transition: all 0.2s ease;
+        }
+        .otto-input::placeholder {
+            color: #636372;
+        }
+        .otto-input:focus {
+            outline: none;
+            border-color: #C8A97E;
+            box-shadow: 0 0 0 3px rgba(200, 169, 126, 0.12);
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-modal {
+            animation: slideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    </style>
+</head>
+<body class="ambient-bg min-h-screen flex flex-col font-sans selection:bg-champagne-500 selection:text-obsidian-950">
+
+    <!-- =====================================================================
+         CABEÇALHO EXECUTIVO & INDICADORES DO FUNIL
+         ===================================================================== -->
+    <header class="border-b border-obsidian-700/80 bg-obsidian-950/90 backdrop-blur-md sticky top-0 z-30">
+        <div class="max-w-[1520px] mx-auto px-4 sm:px-6 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            
+            <!-- Identidade -->
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="flex items-center gap-2.5">
+                        <h1 class="text-2xl font-bold tracking-tight text-white">OttoClub</h1>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-[0.16em] bg-champagne-500/15 text-champagne-400 border border-champagne-500/30">
+                            Vendas Avulsas & Jornada
+                        </span>
+                    </div>
+                    <p class="text-xs text-zinc-400 mt-0.5">
+                        Pipeline comercial e transição clínica longitudinal (6 etapas)
+                    </p>
+                </div>
+
+                <!-- Botão Novo Lead (Mobile) -->
+                <button type="button" onclick="openNewLeadModal()"
+                    class="lg:hidden inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-champagne-500 hover:bg-champagne-400 text-obsidian-950 font-semibold text-xs transition-all shadow-lg">
+                    <span>+ Novo Lead</span>
+                </button>
+            </div>
+
+            <!-- KPIs Rápidos + Ações -->
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="flex items-center gap-4 bg-obsidian-900 border border-obsidian-700/80 rounded-2xl px-4 py-2">
+                    <div>
+                        <span class="block text-[10px] uppercase tracking-wider text-zinc-500">Em Negociação (1–3)</span>
+                        <span id="kpi-negociacao" class="text-base font-bold text-white">0</span>
+                    </div>
+                    <div class="h-6 w-px bg-obsidian-700"></div>
+                    <div>
+                        <span class="block text-[10px] uppercase tracking-wider text-zinc-500">Ativos / Onboarding (4–6)</span>
+                        <span id="kpi-ativos" class="text-base font-bold text-emerald-400">0</span>
+                    </div>
+                    <div class="h-6 w-px bg-obsidian-700"></div>
+                    <div>
+                        <span class="block text-[10px] uppercase tracking-wider text-zinc-500">Receita Recorrente</span>
+                        <span id="kpi-mrr" class="text-base font-bold text-champagne-400">R$ 0</span>
+                    </div>
+                </div>
+
+                <!-- Botão Guia do Método -->
+                <button type="button" onclick="openPlaybookModal()"
+                    class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-obsidian-900 hover:bg-obsidian-800 text-zinc-200 border border-obsidian-700 text-xs font-medium transition-all">
+                    <svg class="w-4 h-4 text-champagne-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
+                    </svg>
+                    <span>Manual das 6 Fases</span>
+                </button>
+
+                <!-- Botão Limpar Lista (Ideal para apagar os exemplos ao iniciar) -->
+                <button type="button" id="btn-clear-all" onclick="handleClearAllLeads()"
+                    class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-obsidian-900 hover:bg-red-950/40 text-zinc-400 hover:text-red-400 border border-obsidian-700 hover:border-red-500/30 text-xs font-medium transition-all">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
+                    </svg>
+                    <span>Limpar Lista</span>
+                </button>
+
+                <!-- Botão Novo Lead (Desktop) -->
+                <button type="button" onclick="openNewLeadModal()"
+                    class="hidden lg:inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-champagne-500 hover:bg-champagne-400 text-obsidian-950 font-semibold text-xs transition-all shadow-lg">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                    </svg>
+                    <span>Novo Lead</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Barra de Filtro Rápido por Etapa (Excelente no Celular) -->
+        <div class="max-w-[1520px] mx-auto px-4 sm:px-6 pb-3 flex items-center gap-2 overflow-x-auto kanban-scroll">
+            <button type="button" onclick="setStageFilter('all')" id="filter-all"
+                class="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium bg-obsidian-800 text-white border border-white/15 transition-all">
+                Todas as Etapas
+            </button>
+            <div id="stage-filter-pills" class="flex items-center gap-2"></div>
+        </div>
+    </header>
+
+    <!-- =====================================================================
+         ÁREA PRINCIPAL: PIPELINE EM 6 ETAPAS
+         ===================================================================== -->
+    <main class="flex-1 max-w-[1520px] w-full mx-auto px-4 sm:px-6 py-6">
+        
+        <!-- Banner Contextual Dinâmico (Mostra dica estratégica da etapa filtrada) -->
+        <div id="stage-insight-banner" class="mb-6 bg-obsidian-900/90 border border-obsidian-700/80 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex items-start gap-3">
+                <div class="w-9 h-9 rounded-xl bg-champagne-500/10 border border-champagne-500/25 text-champagne-400 flex items-center justify-center shrink-0 mt-0.5 font-bold text-sm">
+                    <span id="insight-badge">OS</span>
+                </div>
+                <div>
+                    <h2 id="insight-title" class="text-sm font-semibold text-white">
+                        Arquitetura do Funil OttoClub: Da Descoberta ao Plano de Cuidado
+                    </h2>
+                    <p id="insight-desc" class="text-xs text-zinc-400 mt-0.5 leading-relaxed">
+                        Clique em qualquer cartão para abrir o roteiro de WhatsApp específico da fase, marcar o checklist de avanço ou mover o paciente para a próxima etapa.
+                    </p>
+                </div>
+            </div>
+            <div class="shrink-0 text-right hidden md:block">
+                <span class="text-[11px] text-zinc-500 block">Ticket Âncora Individual</span>
+                <span class="text-sm font-semibold text-champagne-400">R$ 100,00 / mês</span>
+            </div>
+        </div>
+
+        <!-- Quadro Kanban / Colunas das 6 Fases -->
+        <div id="pipeline-board" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 items-start">
+            <!-- Renderizado dinamicamente via JavaScript -->
+        </div>
+
+    </main>
+
+    <!-- =====================================================================
+         MODAL 1: DETALHES DO LEAD, ROTEIROS DE WHATSAPP & CHECKLIST DA ETAPA
+         ===================================================================== -->
+    <div id="lead-detail-modal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div class="animate-modal bg-obsidian-900 border border-obsidian-700 rounded-3xl max-w-2xl w-full p-6 sm:p-7 shadow-2xl my-auto max-h-[92vh] overflow-y-auto">
+            
+            <!-- Cabeçalho do Modal -->
+            <div class="flex items-start justify-between gap-4 pb-4 border-b border-obsidian-700">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span id="modal-stage-pill" class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-champagne-500/15 text-champagne-400 border border-champagne-500/30">
+                            Etapa 1
+                        </span>
+                        <span id="modal-lead-ticket" class="text-xs text-zinc-400 font-medium">R$ 100/mês</span>
+                    </div>
+                    <h3 id="modal-lead-name" class="text-xl font-bold text-white">Nome do Lead</h3>
+                    <p id="modal-lead-meta" class="text-xs text-zinc-400 mt-0.5">Perfil / Origem</p>
+                </div>
+                <button type="button" onclick="closeLeadDetailModal()" class="p-2 rounded-xl bg-obsidian-850 hover:bg-obsidian-800 text-zinc-400 hover:text-white transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Controle de Movimentação entre as 6 Etapas -->
+            <div class="mt-5">
+                <label class="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-2">
+                    Mover Etapa no Funil
+                </label>
+                <div id="modal-stage-selector" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <!-- Botões das 6 etapas gerados via JS -->
+                </div>
+            </div>
+
+            <!-- Estratégia Psicológica / Clínica da Etapa Atual -->
+            <div class="mt-5 bg-obsidian-850 border border-obsidian-700/80 rounded-2xl p-4">
+                <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-xs font-semibold text-champagne-400">Objetivo Desta Fase</span>
+                    <span id="modal-stage-owner" class="text-[11px] px-2 py-0.5 rounded bg-obsidian-800 text-zinc-300">Responsável</span>
+                </div>
+                <p id="modal-stage-goal" class="text-xs text-zinc-300 leading-relaxed"></p>
+                <div class="mt-3 pt-3 border-t border-obsidian-700/60">
+                    <span class="text-[11px] font-semibold text-zinc-400 block mb-1">Gatilho / Pergunta-Chave:</span>
+                    <p id="modal-stage-trigger" class="text-xs italic text-champagne-400/90"></p>
+                </div>
+            </div>
+
+            <!-- Checklist Prático da Etapa -->
+            <div class="mt-5">
+                <span class="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-2">
+                    Checklist para Avançar de Fase
+                </span>
+                <div id="modal-checklist" class="space-y-2">
+                    <!-- Checkboxes renderizados via JS -->
+                </div>
+            </div>
+
+            <!-- Roteiro de Mensagem Pronto & Personalizado para o Lead -->
+            <div class="mt-5">
+                <div class="flex items-center justify-between mb-2">
+                    <label for="modal-script-box" class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+                        Roteiro Sugerido (Personalizado para este contato)
+                    </label>
+                    <button type="button" onclick="copyCurrentScript()" class="text-xs font-semibold text-champagne-400 hover:text-champagne-300 flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"/>
+                        </svg>
+                        <span>Copiar Texto</span>
+                    </button>
+                </div>
+                <textarea id="modal-script-box" rows="4" class="otto-input text-xs leading-relaxed"></textarea>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-3">
+                    <button type="button" onclick="copyCurrentScript()"
+                        class="py-2.5 px-4 rounded-xl bg-obsidian-850 hover:bg-obsidian-800 text-zinc-200 border border-obsidian-700 text-xs font-semibold transition-all">
+                        Copiar Mensagem
+                    </button>
+                    <button type="button" onclick="sendScriptViaWhatsApp()"
+                        class="py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-all flex items-center justify-center gap-2">
+                        <span>Enviar Direto no WhatsApp</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Anotações Clínicas / Objeções / Resumo do PTS -->
+            <div class="mt-5">
+                <label for="modal-notes-box" class="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">
+                    Anotações (Objeções, Histórico de Acolhimento ou Metas do PTS)
+                </label>
+                <textarea id="modal-notes-box" rows="2" placeholder="Registre aqui dúvidas do cliente, perfil de saúde ou metas pactuadas no PTS..." class="otto-input text-xs"></textarea>
+                <div class="flex items-center justify-between mt-3 pt-3 border-t border-obsidian-700/70">
+                    <button type="button" id="btn-delete-lead" onclick="handleDeleteLead()"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/30 font-medium transition-all">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
+                        </svg>
+                        <span>Eliminar contato</span>
+                    </button>
+                    <button type="button" onclick="saveLeadNotes()"
+                        class="px-4 py-2 rounded-xl bg-champagne-500 hover:bg-champagne-400 text-obsidian-950 font-semibold text-xs transition-all">
+                        Salvar Anotações
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- =====================================================================
+         MODAL 2: ADICIONAR NOVO LEAD AVULSO
+         ===================================================================== -->
+    <div id="new-lead-modal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="animate-modal bg-obsidian-900 border border-obsidian-700 rounded-3xl max-w-md w-full p-6 shadow-2xl">
+            <div class="flex items-center justify-between pb-3 border-b border-obsidian-700 mb-4">
+                <h3 class="text-lg font-bold text-white">Novo Contato — OttoClub</h3>
+                <button type="button" onclick="closeNewLeadModal()" class="p-1.5 rounded-lg bg-obsidian-850 text-zinc-400 hover:text-white">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <form onsubmit="createNewLead(event)" class="space-y-3.5">
+                <div>
+                    <label for="new-name" class="block text-xs font-medium text-zinc-300 mb-1">Nome Completo *</label>
+                    <input type="text" id="new-name" placeholder="Ex: Fernanda Oliveira" class="otto-input" required>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="new-phone" class="block text-xs font-medium text-zinc-300 mb-1">WhatsApp (DDD + Número)</label>
+                        <input type="tel" id="new-phone" placeholder="Ex: 64999990000" class="otto-input">
+                    </div>
+                    <div>
+                        <label for="new-stage" class="block text-xs font-medium text-zinc-300 mb-1">Etapa Inicial</label>
+                        <select id="new-stage" class="otto-input">
+                            <option value="1">1. Apresentação</option>
+                            <option value="2">2. Estranhamento</option>
+                            <option value="3">3. Convencimento</option>
+                            <option value="4">4. Inscrição</option>
+                            <option value="5">5. Consulta de Acolhimento</option>
+                            <option value="6">6. PTS</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="new-profile" class="block text-xs font-medium text-zinc-300 mb-1">Dor Principal / Perfil</label>
+                    <input type="text" id="new-profile" placeholder="Ex: Mãe de 2 filhos, cansada de fila na UPA" class="otto-input">
+                </div>
+
+                <div>
+                    <label for="new-notes" class="block text-xs font-medium text-zinc-300 mb-1">Observação Inicial</label>
+                    <textarea id="new-notes" rows="2" placeholder="Como conheceu a OttoClub? Alguma dúvida específica?" class="otto-input"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeNewLeadModal()" class="px-4 py-2.5 rounded-xl bg-obsidian-850 text-zinc-300 text-xs font-medium">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-champagne-500 hover:bg-champagne-400 text-obsidian-950 text-xs font-semibold">
+                        Adicionar ao Funil
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- =====================================================================
+         MODAL 3: MANUAL ESTRATÉGICO DAS 6 FASES (PLAYBOOK COMPLETO)
+         ===================================================================== -->
+    <div id="playbook-modal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div class="animate-modal bg-obsidian-900 border border-obsidian-700 rounded-3xl max-w-3xl w-full p-6 sm:p-7 shadow-2xl my-auto max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-4 border-b border-obsidian-700 mb-5">
+                <div>
+                    <span class="text-[11px] font-semibold uppercase tracking-widest text-champagne-400">Arquitetura Comercial & Clínica</span>
+                    <h3 class="text-xl font-bold text-white mt-0.5">As 6 Etapas do Método OttoClub</h3>
+                </div>
+                <button type="button" onclick="closePlaybookModal()" class="p-2 rounded-xl bg-obsidian-850 text-zinc-400 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div id="playbook-list" class="space-y-3">
+                <!-- Preenchido via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- =====================================================================
+         TOAST DE FEEDBACK (SEM ALERT)
+         ===================================================================== -->
+    <div id="toast" role="status" class="fixed bottom-5 right-5 z-50 hidden bg-obsidian-850 border border-champagne-500/40 text-zinc-100 px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 text-xs font-medium">
+        <span class="w-2 h-2 rounded-full bg-champagne-400"></span>
+        <span id="toast-message">Ação concluída</span>
+    </div>
+
+    <!-- =====================================================================
+         LÓGICA DO APLICATIVO (DADOS EM MEMÓRIA, ROTEIROS E INTERAÇÕES)
+         ===================================================================== -->
+    <script>
+        /**
+         * Definição estruturada das 6 etapas imaginadas pelo Dr. Alan Franco,
+         * unindo psicologia de vendas (1 a 4) e entrega clínica longitudinal (5 e 6).
+         */
+        const STAGES = [
+            {
+                id: 1,
+                shortName: "Apresentação",
+                fullName: "1. Apresentação",
+                badgeColor: "text-sky-400 bg-sky-500/10 border-sky-500/25",
+                owner: "Comercial / Dr. Alan",
+                goal: "Despertar interesse imediato sem parecer vendedor de plano de saúde. Apresentar a ideia de ter um médico de referência que acompanha a pessoa continuamente.",
+                trigger: "\"Hoje, se você ou alguém da sua casa acordar passando mal ou precisar ajustar um tratamento, você tem um médico que já conhece o seu histórico?\"",
+                checklist: [
+                    "Apresentar o conceito OttoClub em menos de 30 segundos",
+                    "Identificar a dor principal (fila da UPA, filhos, rotina corrida ou crônicos)",
+                    "Abrir espaço para a pessoa perguntar como funciona na prática"
+                ],
+                scriptTemplate: (name) => `Olá, ${name}! Tudo joia por aí?\n\nEstou passando para te apresentar a *OttoClub*: um modelo de acompanhamento médico contínuo onde você passa a ter um médico de família de referência no seu WhatsApp e por teleconsulta/consulta, sem depender de fila de pronto-socorro para tudo.\n\nHoje, quando surge algum sintoma ou dúvida de saúde aí na sua casa, como vocês costumam resolver?`
+            },
+            {
+                id: 2,
+                shortName: "Estranhamento",
+                fullName: "2. Estranhamento",
+                badgeColor: "text-amber-400 bg-amber-500/10 border-amber-500/25",
+                owner: "Comercial / Ana Vitória",
+                goal: "Acolher a desconfiança natural ('Isso é convênio?', 'Mas eu quase não fico doente', 'Como funciona por R$ 100/mês?'). Não rebater com defensividade — validar que é um modelo novo e inteligente.",
+                trigger: "\"É totalmente normal estranhar no começo, porque o mercado acostumou a gente a só procurar médico na emergência quando o problema já estourou.\"",
+                checklist: [
+                    "Validar a dúvida do cliente sem discutir ou pressionar",
+                    "Deixar claro que NÃO é plano hospitalar/ANS, mas Atenção Primária resolutiva",
+                    "Explicar que 80% a 85% das demandas de saúde se resolvem sem hospital"
+                ],
+                scriptTemplate: (name) => `Faz total sentido essa sua dúvida, ${name} — quase todo mundo estranha no primeiro momento porque a gente foi acostumado a só procurar médico quando já está passando muito mal.\n\nA OttoClub não é um plano hospitalar tradicional: nós somos a sua porta de entrada médica. Em vez de pagar caro por uma consulta isolada ou enfrentar horas na UPA por uma infecção simples, receita ou avaliação de exame, você tem acompanhamento o ano inteiro com quem já conhece seu histórico.`
+            },
+            {
+                id: 3,
+                shortName: "Convencimento",
+                fullName: "3. Convencimento",
+                badgeColor: "text-purple-400 bg-purple-500/10 border-purple-500/25",
+                owner: "Ana Vitória / Dr. Alan",
+                goal: "Ancorar o valor financeiro e clínico. Comparar R$ 100/mês (menos de R$ 3,35/dia) com o custo de uma única consulta particular avulsa (R$ 350–500) e mostrar o cuidado ativo.",
+                trigger: "\"Uma única consulta particular hoje custa R$ 400 e acaba na porta do consultório. Na OttoClub, por R$ 100/mês, seu cuidado começa na Consulta de Acolhimento e segue o ano todo.\"",
+                checklist: [
+                    "Apresentar a âncora de R$ 100/mês vs. custo de consulta particular",
+                    "Explicar a jornada logo após entrar: Acolhimento + Plano Terapêutico (PTS)",
+                    "Esclarecer regras de triagem e canais de atendimento"
+                ],
+                scriptTemplate: (name) => `${name}, colocando na ponta do lápis: hoje uma única consulta particular custa em média R$ 350 a R$ 450 e termina assim que você sai da sala.\n\nNa OttoClub, com *R$ 100/mês*, você já entra passando pela sua *Consulta de Acolhimento*, recebe seu *Projeto Terapêutico Singular (PTS)* personalizado e conta com nossa equipe de triagem e acompanhamento médico contínuo.\n\nQuer que eu te envie o link de inscrição para já garantirmos sua avaliação inicial essa semana?`
+            },
+            {
+                id: 4,
+                shortName: "Inscrição",
+                fullName: "4. Inscrição",
+                badgeColor: "text-emerald-400 bg-emerald-500/10 border-emerald-500/25",
+                owner: "Ana Vitória (Assinaturas)",
+                goal: "Fechamento rápido e sem atrito. Coletar dados cadastrais básicos, confirmar pagamento da adesão e já agendar imediatamente a Consulta de Acolhimento.",
+                trigger: "\"Assim que confirmar sua inscrição, nossa monitora já libera seu acesso e agenda sua Consulta de Acolhimento.\"",
+                checklist: [
+                    "Coletar nome completo, CPF, data de nascimento e e-mail",
+                    "Confirmar pagamento da primeira mensalidade (R$ 100,00)",
+                    "Passar o bastão imediatamente para o agendamento do Acolhimento"
+                ],
+                scriptTemplate: (name) => `Seja muito bem-vindo(a) à OttoClub, ${name}! 🎉\n\nPara ativar seu cadastro agora e liberar sua agenda de boas-vindas, me confirme por gentileza:\n• Nome completo:\n• CPF:\n• Data de nascimento:\n\nAssim que finalizarmos aqui, já vamos marcar sua *Consulta de Acolhimento* com o Dr. Alan!`
+            },
+            {
+                id: 5,
+                shortName: "Consulta de Acolhimento",
+                fullName: "5. Consulta de Acolhimento",
+                badgeColor: "text-champagne-400 bg-champagne-500/15 border-champagne-500/30",
+                owner: "Nayane + Dr. Alan",
+                goal: "A grande virada de chave clínica. Primeira consulta aprofundada para ouvir a história do paciente, mapear antecedentes, medicações, hábitos e solicitar exames basais se necessários.",
+                trigger: "\"Essa primeira conversa não é uma consulta corrida de 10 minutos — é onde vamos mapear sua saúde por inteiro para construir seu plano.\"",
+                checklist: [
+                    "Realizar pré-acolhimento de enfermagem (Nayane)",
+                    "Conduzir anamnese longitudinal completa com Dr. Alan",
+                    "Mapear riscos, medicações contínuas e prioridades de saúde"
+                ],
+                scriptTemplate: (name) => `Olá, ${name}! Tudo pronto para a sua *Consulta de Acolhimento* na OttoClub.\n\nNessa primeira consulta, vamos conversar com calma sobre o seu histórico de saúde, rotina, medicações que você já usa e o que você gostaria de melhorar nos próximos meses.\n\nSe você tiver exames recentes ou lista de remédios em uso, já deixa separado para avaliarmos juntos!`
+            },
+            {
+                id: 6,
+                shortName: "PTS",
+                fullName: "6. PTS (Projeto Terapêutico)",
+                badgeColor: "text-indigo-400 bg-indigo-500/10 border-indigo-500/25",
+                owner: "Dr. Alan + Monitoria",
+                goal: "Consolidar a retenção e o valor percebido. Entregar o Projeto Terapêutico Singular com metas claras pactuadas com o paciente e cronograma ativo de acompanhamento longitudinal.",
+                trigger: "\"Aqui está o seu Projeto Terapêutico Singular: nosso mapa vivo para acompanhar suas metas sem esperar você adoecer.\"",
+                checklist: [
+                    "Formalizar e enviar o PTS com metas clínicas pactuadas",
+                    "Agendar o próximo ponto de contato preventivo da monitoria",
+                    "Registrar indicadores basais para acompanhamento evolutivo"
+                ],
+                scriptTemplate: (name) => `Olá, ${name}! Conforme conversamos na sua Consulta de Acolhimento, finalizamos o seu *Projeto Terapêutico Singular (PTS)* aqui na OttoClub.\n\nNele organizamos suas prioridades de saúde, os ajustes combinados e as datas dos nossos próximos acompanhamentos preventivos.\n\nQualquer dúvida no dia a dia, nossa equipe já está a postos por aqui. Seguimos juntos cuidando da sua saúde!`
+            }
+        ];
+
+        /**
+         * Estado inicial em memória com exemplos realistas para visualização imediata
+         */
+        let leads = [
+            {
+                id: "lead-1",
+                name: "Camila Rodrigues",
+                phone: "64999112233",
+                stage: 1,
+                profile: "Mãe de 2 crianças • Demanda pediátrica e rotina",
+                ticket: 100,
+                notes: "Pediu informações após ver publicação sobre atendimento sem fila de UPA.",
+                completedChecks: [0]
+            },
+            {
+                id: "lead-2",
+                name: "Roberto Almeida",
+                phone: "64988223344",
+                stage: 2,
+                profile: "Autônomo (38 anos) • Achou diferente por não ser convênio tradicional",
+                ticket: 100,
+                notes: "Perguntou: 'Mas se eu não ficar doente no mês, pago à toa?'. Trabalhar conceito de prevenção e acesso imediato.",
+                completedChecks: [0]
+            },
+            {
+                id: "lead-3",
+                name: "Juliana Mendes",
+                phone: "64981334455",
+                stage: 3,
+                profile: "Professora • Busca acompanhamento contínuo e ajuste de exames",
+                ticket: 100,
+                notes: "Gostou muito da comparação com o valor da consulta particular avulsa. Deve fechar até sexta.",
+                completedChecks: [0, 1]
+            },
+            {
+                id: "lead-4",
+                name: "Marcos Vinícius",
+                phone: "64992445566",
+                stage: 5,
+                profile: "Hipertenso leve • Adesão confirmada (R$ 100/mês)",
+                ticket: 100,
+                notes: "Inscrição paga. Pré-triagem feita pela Nayane; consulta de acolhimento marcada para quinta-feira.",
+                completedChecks: [0]
+            },
+            {
+                id: "lead-5",
+                name: "Helena Costa",
+                phone: "64996556677",
+                stage: 6,
+                profile: "Acompanhamento metabólico e sono • Membro ativo",
+                ticket: 100,
+                notes: "PTS entregue com metas de atividade física, higiene do sono e revisão laboratorial em 60 dias.",
+                completedChecks: [0, 1, 2]
+            }
+        ];
+
+        let currentStageFilter = 'all';
+        let selectedLeadId = null;
+        let pendingDeleteId = null;
+        let pendingCardDeleteId = null;
+        let cardDeleteTimer = null;
+        let pendingClearAll = false;
+        let clearAllTimer = null;
+        function initApp() {
+            renderStageFilterPills();
+            renderPipelineBoard();
+            updateKPIs();
+        }
+
+        /**
+         * Renderiza os botões de filtro rápido no topo
+         */
+        function renderStageFilterPills() {
+            const container = document.getElementById('stage-filter-pills');
+            container.innerHTML = STAGES.map(stage => {
+                const isActive = currentStageFilter === stage.id;
+                const activeStyle = isActive
+                    ? 'bg-champagne-500 text-obsidian-950 font-semibold border-champagne-500'
+                    : 'bg-obsidian-900 text-zinc-400 hover:text-zinc-200 border-obsidian-700/80';
+
+                return `
+                    <button type="button" onclick="setStageFilter(${stage.id})"
+                        class="shrink-0 px-3 py-1.5 rounded-lg text-xs border transition-all ${activeStyle}">
+                        ${stage.fullName}
+                    </button>
+                `;
+            }).join('');
+
+            const allBtn = document.getElementById('filter-all');
+            if (currentStageFilter === 'all') {
+                allBtn.className = 'shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold bg-champagne-500 text-obsidian-950 border border-champagne-500 transition-all';
+            } else {
+                allBtn.className = 'shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium bg-obsidian-900 text-zinc-400 hover:text-zinc-200 border border-obsidian-700/80 transition-all';
+            }
+        }
+
+        /**
+         * Aplica filtro de etapa e atualiza banner estratégico
+         */
+        function setStageFilter(stageId) {
+            currentStageFilter = stageId;
+            renderStageFilterPills();
+            renderPipelineBoard();
+
+            const badge = document.getElementById('insight-badge');
+            const title = document.getElementById('insight-title');
+            const desc = document.getElementById('insight-desc');
+
+            if (stageId === 'all') {
+                badge.textContent = 'OS';
+                title.textContent = 'Arquitetura do Funil OttoClub: Da Descoberta ao Plano de Cuidado';
+                desc.textContent = 'Clique em qualquer cartão para abrir o roteiro de WhatsApp específico da fase, marcar o checklist de avanço ou mover o paciente para a próxima etapa.';
+            } else {
+                const st = STAGES.find(s => s.id === stageId);
+                badge.textContent = `0${st.id}`;
+                title.textContent = `${st.fullName} — Responsável: ${st.owner}`;
+                desc.textContent = st.goal;
+            }
+        }
+
+        /**
+         * Atualiza indicadores executivos do topo
+         */
+        function updateKPIs() {
+            const negociacao = leads.filter(l => l.stage <= 3).length;
+            const ativos = leads.filter(l => l.stage >= 4).length;
+            const mrr = leads.filter(l => l.stage >= 4).reduce((sum, l) => sum + (Number(l.ticket) || 100), 0);
+
+            document.getElementById('kpi-negociacao').textContent = negociacao;
+            document.getElementById('kpi-ativos').textContent = ativos;
+            document.getElementById('kpi-mrr').textContent = `R$ ${mrr.toLocaleString('pt-BR')}`;
+        }
+
+        /**
+         * Renderiza as 6 colunas do funil
+         */
+        function renderPipelineBoard() {
+            const board = document.getElementById('pipeline-board');
+            const visibleStages = currentStageFilter === 'all'
+                ? STAGES
+                : STAGES.filter(s => s.id === currentStageFilter);
+
+            // Ajusta o grid se estiver filtrado em uma única etapa
+            if (currentStageFilter !== 'all') {
+                board.className = 'grid grid-cols-1 max-w-2xl mx-auto gap-4';
+            } else {
+                board.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 items-start';
+            }
+
+            board.innerHTML = visibleStages.map(stage => {
+                const stageLeads = leads.filter(l => l.stage === stage.id);
+
+                const cardsHtml = stageLeads.length > 0
+                    ? stageLeads.map(lead => renderLeadCard(lead, stage)).join('')
+                    : `
+                        <div class="rounded-2xl border border-dashed border-obsidian-700/80 p-5 text-center">
+                            <p class="text-xs text-zinc-500">Nenhum contato nesta fase</p>
+                        </div>
+                    `;
+
+                return `
+                    <section class="bg-obsidian-900/90 border border-obsidian-700/80 rounded-2xl p-3.5 flex flex-col gap-3">
+                        <!-- Cabeçalho da Coluna -->
+                        <div class="flex items-center justify-between gap-2 pb-2.5 border-b border-obsidian-700/70">
+                            <div>
+                                <span class="inline-block px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider border ${stage.badgeColor}">
+                                    Fase ${stage.id}
+                                </span>
+                                <h3 class="text-sm font-bold text-white mt-1">${stage.shortName}</h3>
+                            </div>
+                            <span class="w-6 h-6 rounded-lg bg-obsidian-850 border border-obsidian-700 text-xs font-semibold text-zinc-300 flex items-center justify-center">
+                                ${stageLeads.length}
+                            </span>
+                        </div>
+
+                        <!-- Lista de Cards -->
+                        <div class="space-y-2.5">
+                            ${cardsHtml}
+                        </div>
+                    </section>
+                `;
+            }).join('');
+        }
+
+        /**
+         * Renderiza o cartão individual de um lead/paciente
+         */
+        function renderLeadCard(lead, stage) {
+            const totalChecks = stage.checklist.length;
+            const doneChecks = (lead.completedChecks || []).length;
+            const nextStage = stage.id < 6 ? STAGES.find(s => s.id === stage.id + 1) : null;
+
+            return `
+                <article onclick="openLeadDetailModal('${lead.id}')"
+                    class="group cursor-pointer bg-obsidian-850 hover:bg-obsidian-800 border border-obsidian-700/90 hover:border-champagne-500/50 rounded-2xl p-3.5 transition-all shadow-sm">
+                    
+                    <div class="flex items-start justify-between gap-2">
+                        <h4 class="text-sm font-semibold text-white group-hover:text-champagne-400 transition-colors leading-snug">
+                            ${escapeHtml(lead.name)}
+                        </h4>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <span class="text-[11px] font-semibold text-champagne-400">
+                                R$ ${lead.ticket}
+                            </span>
+                            <button type="button" id="card-del-${lead.id}" onclick="quickDeleteLead(event, '${lead.id}')"
+                                title="Eliminar contato"
+                                class="p-1 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-all">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <p class="text-[11.5px] text-zinc-400 mt-1 line-clamp-2 leading-relaxed">
+                        ${escapeHtml(lead.profile || 'Interesse OttoClub Individual')}
+                    </p>
+
+                    ${lead.notes ? `
+                        <div class="mt-2.5 px-2.5 py-1.5 rounded-lg bg-obsidian-900/90 border border-obsidian-700/60 text-[11px] text-zinc-400 line-clamp-2">
+                            ${escapeHtml(lead.notes)}
+                        </div>
+                    ` : ''}
+
+                    <!-- Rodapé do Card: Progresso + Avanço Rápido -->
+                    <div class="mt-3 pt-2.5 border-t border-obsidian-700/60 flex items-center justify-between gap-2">
+                        <span class="text-[10.5px] text-zinc-500 font-medium">
+                            Checklist: <strong class="text-zinc-300">${doneChecks}/${totalChecks}</strong>
+                        </span>
+
+                        ${nextStage ? `
+                            <button type="button" onclick="quickAdvanceLead(event, '${lead.id}')"
+                                title="Avançar para ${nextStage.fullName}"
+                                class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-obsidian-900 hover:bg-champagne-500 text-zinc-300 hover:text-obsidian-950 border border-obsidian-700 hover:border-champagne-500 text-[10.5px] font-semibold transition-all">
+                                <span>Avançar</span>
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                                </svg>
+                            </button>
+                        ` : `
+                            <span class="text-[10.5px] font-semibold text-emerald-400">
+                                ● Em Acompanhamento
+                            </span>
+                        `}
+                    </div>
+                </article>
+            `;
+        }
+
+        /**
+         * Avança um lead diretamente para a próxima fase
+         */
+        function quickAdvanceLead(event, leadId) {
+            event.stopPropagation();
+            const lead = leads.find(l => l.id === leadId);
+            if (!lead || lead.stage >= 6) return;
+
+            lead.stage += 1;
+            lead.completedChecks = [];
+            const newStageObj = STAGES.find(s => s.id === lead.stage);
+
+            renderPipelineBoard();
+            updateKPIs();
+            showToast(`${lead.name} avançou para ${newStageObj.fullName}`);
+        }
+
+        /**
+         * Elimina um lead diretamente pelo ícone de lixeira no cartão (confirmação em 2 cliques)
+         */
+        function quickDeleteLead(event, leadId) {
+            event.stopPropagation();
+            const btn = document.getElementById(`card-del-${leadId}`);
+
+            if (pendingCardDeleteId !== leadId) {
+                if (pendingCardDeleteId) {
+                    renderPipelineBoard();
+                }
+                pendingCardDeleteId = leadId;
+                const currentBtn = document.getElementById(`card-del-${leadId}`);
+                if (currentBtn) {
+                    currentBtn.className = 'px-2 py-0.5 rounded-md bg-red-600 text-white text-[10px] font-semibold transition-all';
+                    currentBtn.textContent = 'Confirmar?';
+                }
+                clearTimeout(cardDeleteTimer);
+                cardDeleteTimer = setTimeout(() => {
+                    pendingCardDeleteId = null;
+                    renderPipelineBoard();
+                }, 4000);
+                return;
+            }
+
+            clearTimeout(cardDeleteTimer);
+            const target = leads.find(l => l.id === leadId);
+            leads = leads.filter(l => l.id !== leadId);
+            pendingCardDeleteId = null;
+
+            renderPipelineBoard();
+            updateKPIs();
+            showToast(`${target ? target.name : 'Contato'} eliminado do funil.`);
+        }
+
+        /**
+         * Limpa todos os contatos do quadro de uma só vez (confirmação em 2 cliques)
+         */
+        function handleClearAllLeads() {
+            const btn = document.getElementById('btn-clear-all');
+            if (!leads.length) {
+                showToast("O funil já está vazio.");
+                return;
+            }
+
+            if (!pendingClearAll) {
+                pendingClearAll = true;
+                btn.className = 'inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-red-600 text-white border border-red-500 text-xs font-semibold transition-all';
+                btn.querySelector('span').textContent = 'Confirmar limpeza?';
+                clearTimeout(clearAllTimer);
+                clearAllTimer = setTimeout(() => {
+                    pendingClearAll = false;
+                    btn.className = 'inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-obsidian-900 hover:bg-red-950/40 text-zinc-400 hover:text-red-400 border border-obsidian-700 hover:border-red-500/30 text-xs font-medium transition-all';
+                    btn.querySelector('span').textContent = 'Limpar Lista';
+                }, 4000);
+                return;
+            }
+
+            clearTimeout(clearAllTimer);
+            pendingClearAll = false;
+            leads = [];
+            btn.className = 'inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-obsidian-900 hover:bg-red-950/40 text-zinc-400 hover:text-red-400 border border-obsidian-700 hover:border-red-500/30 text-xs font-medium transition-all';
+            btn.querySelector('span').textContent = 'Limpar Lista';
+
+            renderPipelineBoard();
+            updateKPIs();
+            showToast("Todos os contatos foram removidos.");
+        }
+
+        /**
+         * Abre o modal com roteiros personalizados, checklist e detalhes do lead
+         */
+        function openLeadDetailModal(leadId) {
+            const lead = leads.find(l => l.id === leadId);
+            if (!lead) return;
+
+            selectedLeadId = leadId;
+            pendingDeleteId = null;
+            const stage = STAGES.find(s => s.id === lead.stage) || STAGES[0];
+
+            document.getElementById('modal-stage-pill').textContent = stage.fullName;
+            document.getElementById('modal-lead-ticket').textContent = `R$ ${lead.ticket}/mês`;
+            document.getElementById('modal-lead-name').textContent = lead.name;
+            document.getElementById('modal-lead-meta').textContent =
+                `${lead.profile || 'Plano Individual OttoClub'}${lead.phone ? ` • WhatsApp: ${lead.phone}` : ''}`;
+
+            // Renderiza os 6 botões de troca rápida de etapa
+            const stageSelector = document.getElementById('modal-stage-selector');
+            stageSelector.innerHTML = STAGES.map(s => {
+                const isCurrent = s.id === lead.stage;
+                const style = isCurrent
+                    ? 'bg-champagne-500 text-obsidian-950 font-semibold border-champagne-500'
+                    : 'bg-obsidian-850 hover:bg-obsidian-800 text-zinc-300 border-obsidian-700';
+
+                return `
+                    <button type="button" onclick="changeLeadStageInModal(${s.id})"
+                        class="px-3 py-2 rounded-xl text-xs border text-left transition-all truncate ${style}">
+                        ${s.fullName}
+                    </button>
+                `;
+            }).join('');
+
+            // Preenche diretrizes estratégicas da fase atual
+            document.getElementById('modal-stage-owner').textContent = stage.owner;
+            document.getElementById('modal-stage-goal').textContent = stage.goal;
+            document.getElementById('modal-stage-trigger').textContent = stage.trigger;
+
+            // Renderiza checklist interativo da fase
+            const checklistContainer = document.getElementById('modal-checklist');
+            const completed = lead.completedChecks || [];
+            checklistContainer.innerHTML = stage.checklist.map((itemText, idx) => {
+                const checked = completed.includes(idx);
+                return `
+                    <label class="flex items-start gap-2.5 p-2.5 rounded-xl bg-obsidian-850/90 border border-obsidian-700/70 cursor-pointer hover:border-obsidian-600 transition-all">
+                        <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleChecklistItem(${idx})"
+                            class="mt-0.5 rounded border-obsidian-600 bg-obsidian-900 text-champagne-500 focus:ring-champagne-500">
+                        <span class="text-xs leading-relaxed ${checked ? 'line-through text-zinc-500' : 'text-zinc-200'}">
+                            ${escapeHtml(itemText)}
+                        </span>
+                    </label>
+                `;
+            }).join('');
+
+            // Gera roteiro personalizado com o primeiro nome do lead
+            const firstName = lead.name.split(' ')[0];
+            document.getElementById('modal-script-box').value = stage.scriptTemplate(firstName);
+            document.getElementById('modal-notes-box').value = lead.notes || '';
+
+            const deleteBtn = document.getElementById('btn-delete-lead');
+            deleteBtn.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/30 font-medium transition-all';
+            deleteBtn.querySelector('span').textContent = 'Eliminar contato';
+
+            document.getElementById('lead-detail-modal').classList.remove('hidden');
+        }
+
+        function changeLeadStageInModal(newStageId) {
+            const lead = leads.find(l => l.id === selectedLeadId);
+            if (!lead) return;
+
+            lead.stage = newStageId;
+            lead.completedChecks = [];
+            renderPipelineBoard();
+            updateKPIs();
+            openLeadDetailModal(lead.id);
+            showToast(`Etapa atualizada para Fase ${newStageId}`);
+        }
+
+        function toggleChecklistItem(idx) {
+            const lead = leads.find(l => l.id === selectedLeadId);
+            if (!lead) return;
+
+            if (!Array.isArray(lead.completedChecks)) lead.completedChecks = [];
+
+            if (lead.completedChecks.includes(idx)) {
+                lead.completedChecks = lead.completedChecks.filter(i => i !== idx);
+            } else {
+                lead.completedChecks.push(idx);
+            }
+
+            renderPipelineBoard();
+            openLeadDetailModal(lead.id);
+        }
+
+        function saveLeadNotes() {
+            const lead = leads.find(l => l.id === selectedLeadId);
+            if (!lead) return;
+
+            lead.notes = document.getElementById('modal-notes-box').value.trim();
+            renderPipelineBoard();
+            showToast("Anotações salvas com sucesso!");
+        }
+
+        function handleDeleteLead() {
+            const btn = document.getElementById('btn-delete-lead');
+            if (pendingDeleteId !== selectedLeadId) {
+                pendingDeleteId = selectedLeadId;
+                btn.className = 'inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs bg-red-600 text-white border border-red-500 font-semibold transition-all';
+                btn.querySelector('span').textContent = 'Clique novamente para confirmar';
+                return;
+            }
+
+            leads = leads.filter(l => l.id !== selectedLeadId);
+            closeLeadDetailModal();
+            renderPipelineBoard();
+            updateKPIs();
+            showToast("Contato eliminado do funil.");
+        }
+
+        function closeLeadDetailModal() {
+            selectedLeadId = null;
+            pendingDeleteId = null;
+            document.getElementById('lead-detail-modal').classList.add('hidden');
+        }
+
+        /**
+         * Copia o roteiro usando document.execCommand('copy') compatível com iframes
+         */
+        function copyCurrentScript() {
+            const textarea = document.getElementById('modal-script-box');
+            if (!textarea) return;
+
+            try {
+                textarea.select();
+                textarea.setSelectionRange(0, 99999);
+                document.execCommand('copy');
+                showToast("Roteiro copiado! Pronto para colar no WhatsApp.");
+            } catch (err) {
+                console.error("Erro ao copiar texto:", err);
+                showToast("Selecione o texto e copie manualmente.");
+            }
+        }
+
+        /**
+         * Abre o WhatsApp diretamente com o número do lead (se cadastrado) e o texto do roteiro
+         */
+        function sendScriptViaWhatsApp() {
+            const lead = leads.find(l => l.id === selectedLeadId);
+            const text = document.getElementById('modal-script-box').value.trim();
+            const encoded = encodeURIComponent(text);
+
+            let cleanPhone = (lead && lead.phone) ? lead.phone.replace(/\D/g, '') : '';
+            if (cleanPhone && !cleanPhone.startsWith('55')) {
+                cleanPhone = '55' + cleanPhone;
+            }
+
+            const url = cleanPhone
+                ? `https://wa.me/${cleanPhone}?text=${encoded}`
+                : `https://wa.me/?text=${encoded}`;
+
+            showToast("Abrindo WhatsApp com o roteiro...");
+            window.open(url, '_blank', 'noopener,noreferrer');
+        }
+
+        /**
+         * Modal de Novo Lead
+         */
+        function openNewLeadModal() {
+            document.getElementById('new-lead-modal').classList.remove('hidden');
+        }
+
+        function closeNewLeadModal() {
+            document.getElementById('new-lead-modal').classList.add('hidden');
+        }
+
+        function createNewLead(event) {
+            event.preventDefault();
+
+            const name = document.getElementById('new-name').value.trim();
+            const phone = document.getElementById('new-phone').value.trim();
+            const stage = parseInt(document.getElementById('new-stage').value, 10) || 1;
+            const profile = document.getElementById('new-profile').value.trim();
+            const notes = document.getElementById('new-notes').value.trim();
+
+            if (!name) return;
+
+            const newLead = {
+                id: 'lead-' + Date.now(),
+                name,
+                phone,
+                stage,
+                profile: profile || 'Plano Individual OttoClub',
+                ticket: 100,
+                notes,
+                completedChecks: []
+            };
+
+            leads.unshift(newLead);
+
+            // Limpa campos
+            document.getElementById('new-name').value = '';
+            document.getElementById('new-phone').value = '';
+            document.getElementById('new-profile').value = '';
+            document.getElementById('new-notes').value = '';
+
+            closeNewLeadModal();
+            renderPipelineBoard();
+            updateKPIs();
+            showToast(`${name} adicionado à Fase ${stage}!`);
+        }
+
+        /**
+         * Modal do Manual das 6 Fases
+         */
+        function openPlaybookModal() {
+            const list = document.getElementById('playbook-list');
+            list.innerHTML = STAGES.map(s => `
+                <div class="bg-obsidian-850 border border-obsidian-700/80 rounded-2xl p-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                        <h4 class="text-sm font-bold text-white">${s.fullName}</h4>
+                        <span class="text-[11px] px-2.5 py-0.5 rounded-full border ${s.badgeColor}">${s.owner}</span>
+                    </div>
+                    <p class="text-xs text-zinc-300 leading-relaxed">${s.goal}</p>
+                    <p class="text-xs italic text-champagne-400 mt-2">${s.trigger}</p>
+                </div>
+            `).join('');
+
+            document.getElementById('playbook-modal').classList.remove('hidden');
+        }
+
+        function closePlaybookModal() {
+            document.getElementById('playbook-modal').classList.add('hidden');
+        }
+
+        /**
+         * Utilitários
+         */
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').textContent = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3400);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        // Inicializa ao carregar a página
+        window.onload = initApp;
+    </script>
+</body>
+</html>
